@@ -1,4 +1,3 @@
-```python
 from flask import Flask, render_template, request, redirect, session, flash, send_file
 import sqlite3, pandas as pd, os
 
@@ -128,4 +127,4 @@ def export():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
-```
+

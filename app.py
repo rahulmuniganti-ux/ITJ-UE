@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, session, flash, sen
 import sqlite3, pandas as pd, os, re
 from parser import extract_timetable
 
-app = Flask(**name**)
+app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "fallback_secret")
 
 # Upload folder

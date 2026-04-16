@@ -173,7 +173,7 @@ def view_consolidated():
         grouped_html += f"""
         <tr>
             <td rowspan="{len(group)}">{date}</td>
-        """
+
 
         first = True
 
@@ -194,11 +194,11 @@ def view_consolidated():
                 <td>{row.get('SUBJECTCODE','')}</td>
                 <td>{row.get('COUNT','')}</td>
             </tr>
-            """
+    
 
-            first = False
+          first = False
 
-    return render_template("timetable.html", table_html=grouped_html)
+      return render_template("timetable.html", table_html=grouped_html)
 
 # DOWNLOAD PAGE
 @app.route("/download_excel")

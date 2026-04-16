@@ -47,8 +47,7 @@ def register():
         conn.close()
         return "Registered"
 
-    return "Register Page"
-
+    return render_template("register.html")
 # LOGIN
 @app.route("/login", methods=["GET","POST"])
 def login():
@@ -66,8 +65,7 @@ def login():
         else:
             return "Invalid Login"
 
-    return "Login Page"
-
+    return render_template("login.html")
 # UPLOAD
 @app.route("/upload", methods=["POST"])
 def upload():

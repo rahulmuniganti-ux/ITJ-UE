@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Upload History</h2>
+
+<br>
+
+<table>
+
+<tr>
+<th>ID</th>
+<th>PDF Name</th>
+<th>Upload Time</th>
+<th>View</th>
+<th>Delete</th>
+</tr>
+
+{% for row in data %}
+
+<tr>
+<td>{{ row[0] }}</td>
+<td>{{ row[1] }}</td>
+<td>{{ row[2] }}</td>
+
+<td>
+<a href="/view_consolidated">
+<button>View</button>
+</a>
+</td>
+
+<td>
+<a href="/delete/{{ row[1] }}">
+<button style="background:red;">Delete</button>
+</a>
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+{% endblock %}

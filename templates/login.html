@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Login</h2>
+
+<div class="form-box">
+
+<form method="POST">
+
+<label>Email</label>
+<input type="email" name="email" placeholder="Enter your email" required>
+
+<label>Password</label>
+<input type="password" name="password" placeholder="Enter your password" required>
+
+<br>
+
+<button type="submit">Login</button>
+
+</form>
+
+</div>
+
+<style>
+
+.form-box{
+max-width:400px;
+margin:auto;
+text-align:left;
+}
+
+.form-box label{
+font-weight:bold;
+display:block;
+margin-top:15px;
+}
+
+.form-box input{
+width:100%;
+padding:10px;
+margin-top:5px;
+border-radius:6px;
+border:1px solid #ccc;
+outline:none;
+font-size:14px;
+transition:0.3s;
+}
+
+.form-box input:focus{
+border-color:#1a237e;
+box-shadow:0 0 5px rgba(26,35,126,0.5);
+}
+
+button{
+margin-top:20px;
+width:100%;
+padding:10px;
+font-size:16px;
+}
+
+</style>
+
+{% endblock %}

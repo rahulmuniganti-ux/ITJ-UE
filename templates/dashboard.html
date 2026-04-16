@@ -1,0 +1,36 @@
+<div class="row text-center">
+
+{% if session['role'] == 'admin' %}
+<nav class="navbar navbar-dark bg-primary">
+
+<div class="container">
+
+<img src="{{ url_for('static', filename='images/jntuh_logo.png') }}" 
+width="50" class="me-3">
+
+<span class="navbar-brand">
+JNTUH Examination Portal
+</span>
+
+</div>
+
+</nav>
+<div class="col-md-3">
+<a href="/upload" class="btn btn-primary w-100 p-4">Upload Timetable</a>
+</div>
+
+{% endif %}
+
+<div class="col-md-3">
+<a href="/timetable" class="btn btn-success w-100 p-4">View Timetable</a>
+</div>
+
+<div class="col-md-3">
+<a href="/export_excel" class="btn btn-warning w-100 p-4">Download Excel</a>
+</div>
+
+<div class="col-md-3">
+<a href="/export_pdf" class="btn btn-info w-100 p-4">Download PDF</a>
+</div>
+
+</div>

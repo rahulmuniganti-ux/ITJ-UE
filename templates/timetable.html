@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>CONSOLIDATED EXTERNAL TIMETABLE</h2>
+
+<div style="overflow-x:auto">
+
+<table class="styled-table">
+
+<tr>
+<th>DATE</th>
+<th>N/AN</th>
+<th>COLLEGE</th>
+<th>REG</th>
+<th>YEAR</th>
+<th>SEM</th>
+<th>TYPE</th>
+<th>CODE</th>
+<th>BRANCH</th>
+<th>SUBJECT</th>
+<th>SUB CODE</th>
+<th>COUNT</th>
+</tr>
+
+{{ table_html|safe }}
+
+</table>
+
+</div>
+
+<style>
+
+.styled-table{
+width:100%;
+border-collapse:collapse;
+background:white;
+}
+
+.styled-table th{
+background:#1a237e;
+color:white;
+padding:10px;
+}
+
+.styled-table td{
+padding:8px;
+text-align:center;
+border:1px solid #ddd;
+}
+
+.date-row td:first-child{
+font-weight:bold;
+background:#e3f2fd;
+}
+
+</style>
+
+{% endblock %}

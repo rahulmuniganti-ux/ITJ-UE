@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Student Registration</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-primary">
+
+<div class="container">
+
+<img src="{{ url_for('static', filename='images/jntuh_logo.png') }}" width="50">
+
+<span class="navbar-brand ms-3">
+Student Registration
+</span>
+
+</div>
+
+</nav>
+
+<div class="container mt-5">
+
+<div class="card p-4 shadow">
+
+<h3 class="text-center text-success">Student Registration</h3>
+
+<form method="POST">
+
+<div class="mb-3">
+<label>Name</label>
+<input type="text" name="name" class="form-control">
+</div>
+
+<div class="mb-3">
+<label>Roll Number</label>
+<input type="text" name="roll" class="form-control">
+</div>
+
+<div class="mb-3">
+<label>Branch</label>
+<select name="branch" class="form-control">
+<option>CSE</option>
+<option>CSE(AI&ML)</option>
+<option>ECE</option>
+<option>CIVIL</option>
+<option>MECHANICAL</option>
+</select>
+</div>
+
+<div class="mb-3">
+<label>Year</label>
+<select name="year" class="form-control">
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+</select>
+</div>
+
+<div class="mb-3">
+<label>Semester</label>
+<select name="semester" class="form-control">
+<option>1</option>
+<option>2</option>
+</select>
+</div>
+
+<div class="mb-3">
+<label>Email</label>
+<input type="email" name="email" class="form-control">
+</div>
+
+<div class="mb-3">
+<label>Password</label>
+<input type="password" name="password" class="form-control">
+</div>
+
+<button class="btn btn-success w-100">
+Register
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+</body>
+
+</html>

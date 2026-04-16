@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+<title>ITJ-UE</title>
+
+<style>
+
+/* BODY */
+
+body{
+margin:0;
+font-family:"Times New Roman";
+background:#f4f6f9;
+}
+
+/* BANNER */
+
+.header{
+text-align:center;
+background:white;
+}
+
+.header img{
+width:100%;
+max-height:150px;
+object-fit:contain;
+}
+
+/* NAVBAR */
+
+.navbar{
+background:#1a237e;
+color:white;
+padding:12px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.menu a{
+color:white;
+text-decoration:none;
+margin:10px;
+font-weight:bold;
+}
+
+.menu a:hover{
+text-decoration:underline;
+}
+
+/* MAIN CONTENT AREA */
+
+.container{
+padding:40px;
+display:flex;
+justify-content:center;
+}
+
+/* GLOBAL CARD STYLE */
+
+.main-card{
+background:white;
+width:90%;
+max-width:1000px;
+padding:30px;
+border-radius:10px;
+box-shadow:0 0 12px rgba(0,0,0,0.2);
+}
+
+/* SMALL CARDS (for dashboard & homepage) */
+
+.card-container{
+display:flex;
+flex-wrap:wrap;
+justify-content:center;
+gap:25px;
+}
+
+.card{
+background:white;
+width:280px;
+padding:20px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,0.2);
+text-align:left;
+transition:0.3s;
+}
+
+.card:hover{
+transform:scale(1.05);
+}
+
+/* TABLE STYLE */
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th{
+background:#1a237e;
+color:white;
+padding:10px;
+}
+
+td{
+padding:8px;
+text-align:center;
+border-bottom:1px solid #ddd;
+}
+
+tr:nth-child(even){
+background:#f2f2f2;
+}
+
+/* BUTTON */
+
+button{
+padding:8px 15px;
+border:none;
+background:#1a237e;
+color:white;
+border-radius:5px;
+cursor:pointer;
+}
+
+button:hover{
+background:#3949ab;
+}
+
+/* FLASH */
+
+.flash{
+background:#4CAF50;
+color:white;
+padding:10px;
+border-radius:5px;
+display:inline-block;
+margin:10px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- 🔵 BANNER -->
+
+<div class="header">
+<img src="{{ url_for('static', filename='images/banner.png') }}">
+</div>
+
+<!-- 🔵 NAVBAR -->
+
+<div class="navbar">
+
+<div><b>ITJ-UE Portal</b></div>
+
+<div class="menu">
+
+<a href="/">Home</a>
+
+{% if session.get('role') == "admin" %}
+<a href="/admin_dashboard">Dashboard</a>
+<a href="/history">History</a>
+<a href="/download_excel">Download</a>
+<a href="/logout">Logout</a>
+{% elif session.get('role') == "student" %}
+<a href="/view_consolidated">View</a>
+<a href="/export_excel">Download</a>
+<a href="/logout">Logout</a>
+{% else %}
+<a href="/login">Login</a>
+<a href="/register">Register</a>
+{% endif %}
+
+</div>
+
+</div>
+
+<!-- 🔵 FLASH -->
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div style="text-align:center">
+{% for message in messages %}
+<div class="flash">{{ message }}</div>
+{% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<!-- 🔵 CONTENT -->
+
+<div class="container">
+
+<div class="main-card">
+
+{% block content %}
+{% endblock %}
+
+</div>
+
+</div>
+
+</body>
+</html>

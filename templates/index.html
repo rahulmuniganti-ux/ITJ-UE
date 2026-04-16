@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 style="margin-bottom:30px;">Welcome to ITJ-UE Portal</h2>
+
+<div class="card-container">
+
+<!-- ITJ-UE INTRO -->
+
+<div class="card">
+<h3>ITJ-UE Portal</h3>
+<p>
+The <b>ITJ-UE (Intelligent Timetable Generator – University Exams)</b> is a web-based system designed
+to automate the extraction and management of examination timetable data from official PDF documents.
+It reduces manual work and provides structured, accurate outputs for better exam management.
+</p>
+</div>
+
+
+<!-- ABOUT JNTUH -->
+
+<div class="card">
+<h3>About JNTUH</h3>
+<p>
+Jawaharlal Nehru Technological University Hyderabad (JNTUH) is a premier technical university in India,
+established in 1972. It conducts examinations for numerous affiliated colleges and publishes detailed
+exam timetables in PDF format. Managing these manually is complex, which motivates automation.
+</p>
+</div>
+
+
+<!-- PROJECT DETAILS -->
+
+<div class="card">
+<h3>About ITJ-UE Project</h3>
+<p>
+This project extracts important details such as exam dates, sessions, branches, and subjects from
+unstructured PDFs and converts them into structured data. It simplifies timetable handling and ensures
+accuracy and efficiency.
+</p>
+</div>
+
+
+<!-- FEATURES -->
+
+<div class="card">
+<h3>Key Features</h3>
+<p>
+✔ Upload multiple timetable PDFs<br>
+✔ Automatic data extraction<br>
+✔ Consolidated timetable generation<br>
+✔ View timetable in web interface<br>
+✔ Download Excel reports<br>
+✔ Manage upload history
+</p>
+</div>
+
+
+<!-- OBJECTIVE -->
+
+<div class="card">
+<h3>Project Objective</h3>
+<p>
+The main objective is to automate timetable processing and provide a user-friendly system that
+converts complex PDF data into structured formats, reducing errors and saving time.
+</p>
+</div>
+
+</div>
+
+
+<style>
+
+/* Container for cards */
+
+.card-container{
+display:flex;
+flex-wrap:wrap;
+justify-content:center;
+gap:25px;
+}
+
+/* Individual card */
+
+.card{
+background:white;
+width:300px;
+padding:20px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,0.2);
+text-align:left;
+transition:0.3s;
+}
+
+/* Hover effect */
+
+.card:hover{
+transform:scale(1.05);
+}
+
+/* Text */
+
+.card h3{
+color:#1a237e;
+margin-bottom:10px;
+}
+
+.card p{
+line-height:1.5;
+}
+
+</style>
+
+{% endblock %}

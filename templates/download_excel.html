@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Download Timetables</h2>
+
+<br>
+
+<table>
+
+<tr>
+<th>ID</th>
+<th>PDF Name</th>
+<th>Upload Time</th>
+<th>Download</th>
+</tr>
+
+{% for row in data %}
+
+<tr>
+<td>{{ row[0] }}</td>
+<td>{{ row[1] }}</td>
+<td>{{ row[2] }}</td>
+
+<td>
+<a href="/export_excel/{{ row[1] }}">
+<button>Download</button>
+</a>
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+{% endblock %}

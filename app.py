@@ -1,22 +1,24 @@
+```python
 from flask import Flask, render_template, request, redirect, session, flash, send_file
 import sqlite3, pandas as pd, os, re
 from parser import extract_timetable
 
+# Initialize app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "fallback_secret")
 
+# Upload folder setup
 UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-
+# Database connection
 def get_db():
     return sqlite3.connect(os.path.join(os.getcwd(), "database.db"))
-
 
 # HOME
 @app.route("/")
 def home():
     return render_template("index.html")
-
 
 # REGISTER
 @app.route("/register", methods=["GET","POST"])
@@ -32,7 +34,6 @@ def register():
         flash("Registration successful")
         return redirect("/login")
     return render_template("register.html")
-
 
 # LOGIN
 @app.route("/login", methods=["GET","POST"])
@@ -54,19 +55,16 @@ def login():
 
     return render_template("login.html")
 
-
 # LOGOUT
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
 
-
 # ADMIN DASHBOARD
 @app.route("/admin_dashboard")
 def admin_dashboard():
     return render_template("admin_dashboard.html")
-
 
 # MULTI PDF UPLOAD + MERGE
 @app.route("/upload", methods=["POST"])
@@ -114,7 +112,6 @@ def upload():
 
     return redirect("/history")
 
-
 # HISTORY
 @app.route("/history")
 def history():
@@ -122,7 +119,6 @@ def history():
     data = conn.execute("SELECT * FROM uploads").fetchall()
     conn.close()
     return render_template("history.html", data=data)
-
 
 # VIEW CONSOLIDATED
 @app.route("/view_consolidated")
@@ -136,15 +132,12 @@ def view_consolidated():
         flash("No data available")
         return redirect("/admin_dashboard")
 
-    # 🔥 Fix column names automatically
     df.columns = [c.strip().upper() for c in df.columns]
 
-    # Map your columns safely
     date_col = "DATEOFEXAM" if "DATEOFEXAM" in df.columns else "DATE"
     branch_col = "BRANCHCODE" if "BRANCHCODE" in df.columns else "BRANCH"
     subject_col = "SUBJECTNAME" if "SUBJECTNAME" in df.columns else "SUBJECT"
 
-    # Sort safely
     df = df.sort_values(by=[date_col])
 
     grouped_html = ""
@@ -182,19 +175,13 @@ def view_consolidated():
 
     return render_template("timetable.html", table_html=grouped_html)
 
-
-#DOWNLOAD PAGE
+# DOWNLOAD PAGE
 @app.route("/download_excel")
 def download_excel():
-
     conn = get_db()
-
     data = conn.execute("SELECT * FROM uploads").fetchall()
-
     conn.close()
-
     return render_template("download_excel.html", data=data)
-
 
 # EXPORT EXCEL
 @app.route("/export_excel/<filename>")
@@ -216,7 +203,6 @@ def export_excel(filename):
 
     return send_file(excel_file, as_attachment=True)
 
-
 # DELETE
 @app.route("/delete/<filename>")
 def delete_file(filename):
@@ -225,21 +211,15 @@ def delete_file(filename):
     conn.commit()
     conn.close()
 
-    path = os.path.join("uploads", filename)
+    path = os.path.join(UPLOAD_FOLDER, filename)
     if os.path.exists(path):
         os.remove(path)
 
     flash("Deleted successfully")
     return redirect("/history")
-from flask import Flask
 
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Working!"
-
+# RUN APP
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+```

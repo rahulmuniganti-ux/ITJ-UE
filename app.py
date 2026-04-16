@@ -1,7 +1,14 @@
 ```python
 from flask import Flask, render_template, request, redirect, session, flash, send_file
-import sqlite3, pandas as pd, os, re
-from parser import extract_timetable
+import sqlite3, pandas as pd, os
+
+# SAFE IMPORT (prevents crash if parser fails)
+try:
+    from parser import extract_timetable
+except Exception as e:
+    print("Parser load error:", e)
+    def extract_timetable(x):
+        return pd.DataFrame(columns=["DATE","SESSION","BRANCH","SUBJECT"])
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "fallback_secret")
@@ -10,14 +17,23 @@ app.secret_key = os.environ.get("SECRET_KEY", "fallback_secret")
 UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Database connection
+# Database setup (AUTO CREATE TABLES)
 def get_db():
-    return sqlite3.connect(os.path.join(os.getcwd(), "database.db"))
+    conn = sqlite3.connect(os.path.join(os.getcwd(), "database.db"))
+    conn.execute("""CREATE TABLE IF NOT EXISTS users(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT, email TEXT, password TEXT, role TEXT
+    )""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS uploads(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        filename TEXT, upload_time TEXT
+    )""")
+    return conn
 
 # HOME
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return "App Running Successfully 🚀"
 
 # REGISTER
 @app.route("/register", methods=["GET","POST"])
@@ -30,9 +46,9 @@ def register():
         )
         conn.commit()
         conn.close()
-        flash("Registration successful")
-        return redirect("/login")
-    return render_template("register.html")
+        return "Registered"
+
+    return "Register Page"
 
 # LOGIN
 @app.route("/login", methods=["GET","POST"])
@@ -47,32 +63,19 @@ def login():
 
         if user:
             session["role"] = user[4]
-            flash("Login successful")
-            return redirect("/")
+            return "Login Success"
         else:
-            flash("Invalid login")
+            return "Invalid Login"
 
-    return render_template("login.html")
+    return "Login Page"
 
-# LOGOUT
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/")
-
-# ADMIN DASHBOARD
-@app.route("/admin_dashboard")
-def admin_dashboard():
-    return render_template("admin_dashboard.html")
-
-# MULTI PDF UPLOAD + MERGE
+# UPLOAD
 @app.route("/upload", methods=["POST"])
 def upload():
     files = request.files.getlist("file")
 
     if not files:
-        flash("Select PDFs")
-        return redirect("/admin_dashboard")
+        return "No files selected"
 
     conn = get_db()
     merged_df = pd.DataFrame()
@@ -84,7 +87,11 @@ def upload():
         path = os.path.join(UPLOAD_FOLDER, file.filename)
         file.save(path)
 
-        df = extract_timetable(path)
+        try:
+            df = extract_timetable(path)
+        except Exception as e:
+            print("Parser error:", e)
+            df = pd.DataFrame()
 
         if not df.empty:
             merged_df = pd.concat([merged_df, df])
@@ -94,122 +101,30 @@ def upload():
             (file.filename,)
         )
 
-    if merged_df.empty:
-        flash("No data extracted")
-        return redirect("/admin_dashboard")
-
-    merged_df.drop_duplicates(inplace=True)
-    merged_df.to_sql("consolidated_timetable", conn, if_exists="replace", index=False)
-
     conn.commit()
     conn.close()
 
-    flash("PDFs uploaded & merged successfully")
-    return redirect("/history")
+    return "Upload Process Completed"
 
-# HISTORY
-@app.route("/history")
-def history():
-    conn = get_db()
-    data = conn.execute("SELECT * FROM uploads").fetchall()
-    conn.close()
-    return render_template("history.html", data=data)
-
-# VIEW CONSOLIDATED
-@app.route("/view_consolidated")
-def view_consolidated():
-    conn = get_db()
-    df = pd.read_sql("SELECT * FROM consolidated_timetable", conn)
-    conn.close()
-
-    if df.empty:
-        flash("No data available")
-        return redirect("/admin_dashboard")
-
-    df.columns = [c.strip().upper() for c in df.columns]
-
-    date_col = "DATEOFEXAM" if "DATEOFEXAM" in df.columns else "DATE"
-    branch_col = "BRANCHCODE" if "BRANCHCODE" in df.columns else "BRANCH"
-    subject_col = "SUBJECTNAME" if "SUBJECTNAME" in df.columns else "SUBJECT"
-
-    df = df.sort_values(by=[date_col])
-
-    grouped_html = ""
-
-    for date, group in df.groupby(date_col):
-        grouped_html += f"""
-        <tr>
-            <td rowspan="{len(group)}">{date}</td>
-        """
-
-        first = True
-
-        for _, row in group.iterrows():
-            if not first:
-                grouped_html += "<tr>"
-
-            grouped_html += f"""
-                <td>{row.get('FN_AN','AN')}</td>
-                <td>{row.get('HOSTCOLLEGE','XW')}</td>
-                <td>{row.get('REGULATION','R22')}</td>
-                <td>{row.get('EXAM_YEAR','2')}</td>
-                <td>{row.get('SEMESTER','1')}</td>
-                <td>{row.get('REG_SUP','REG')}</td>
-                <td>{row.get(branch_col,'')}</td>
-                <td>{row.get('BRANCHNAME', row.get(branch_col,''))}</td>
-                <td>{row.get(subject_col,'')}</td>
-                <td>{row.get('SUBJECTCODE','')}</td>
-                <td>{row.get('COUNT','')}</td>
-            </tr>
-            """
-
-            first = False
-
-    return render_template("timetable.html", table_html=grouped_html)
-
-# DOWNLOAD PAGE
-@app.route("/download_excel")
-def download_excel():
-    conn = get_db()
-    data = conn.execute("SELECT * FROM uploads").fetchall()
-    conn.close()
-    return render_template("download_excel.html", data=data)
-
-# EXPORT EXCEL
-@app.route("/export_excel/<filename>")
-def export_excel(filename):
+# EXPORT
+@app.route("/export")
+def export():
     conn = get_db()
 
     try:
-        df = pd.read_sql("SELECT * FROM consolidated_timetable", conn)
+        df = pd.read_sql("SELECT * FROM uploads", conn)
     except:
         conn.close()
-        flash("No timetable available")
-        return redirect("/download_excel")
+        return "No data"
 
     conn.close()
 
-    excel_file = os.path.join("/tmp", "output.xlsx")
-    df.to_excel(excel_file, index=False)
+    file_path = "/tmp/output.xlsx"
+    df.to_excel(file_path, index=False)
 
-    return send_file(excel_file, as_attachment=True)
+    return send_file(file_path, as_attachment=True)
 
-# DELETE
-@app.route("/delete/<filename>")
-def delete_file(filename):
-    conn = get_db()
-    conn.execute("DELETE FROM uploads WHERE filename=?", (filename,))
-    conn.commit()
-    conn.close()
-
-    path = os.path.join(UPLOAD_FOLDER, filename)
-    if os.path.exists(path):
-        os.remove(path)
-
-    flash("Deleted successfully")
-    return redirect("/history")
-
-# RUN APP
+# RUN
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)

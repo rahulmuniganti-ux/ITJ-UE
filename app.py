@@ -1,7 +1,7 @@
-
 from flask import Flask, render_template, request, redirect, session, flash, send_file
 import sqlite3, pandas as pd, os
 from parser import extract_timetable
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "fallback_secret")
@@ -10,67 +10,109 @@ app.secret_key = os.environ.get("SECRET_KEY", "fallback_secret")
 UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Database connection + table creation
+# Allowed files
+ALLOWED_EXTENSIONS = {"pdf"}
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+# DB connection
 def get_db():
     conn = sqlite3.connect(os.path.join(os.getcwd(), "database.db"))
-    
+
     conn.execute("""CREATE TABLE IF NOT EXISTS users(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT, email TEXT, password TEXT, role TEXT
+        name TEXT,
+        email TEXT UNIQUE,
+        password TEXT,
+        role TEXT
     )""")
 
     conn.execute("""CREATE TABLE IF NOT EXISTS uploads(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        filename TEXT, upload_time TEXT
+        filename TEXT,
+        upload_time TEXT
     )""")
 
     return conn
+
+
+# LOGIN REQUIRED DECORATOR
+def login_required(role=None):
+    def wrapper(func):
+        def inner(*args, **kwargs):
+            if "role" not in session:
+                return redirect("/login")
+            if role and session.get("role") != role:
+                return redirect("/login")
+            return func(*args, **kwargs)
+        inner.__name__ = func.__name__
+        return inner
+    return wrapper
+
 
 # HOME
 @app.route("/")
 def home():
     return render_template("index.html")
 
+
 # REGISTER
-@app.route("/register", methods=["GET","POST"])
+@app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
         conn = get_db()
+
+        hashed_password = generate_password_hash(request.form["password"])
+
         conn.execute(
             "INSERT INTO users(name,email,password,role) VALUES(?,?,?,?)",
-            (request.form["name"], request.form["email"], request.form["password"], request.form["role"])
+            (
+                request.form["name"],
+                request.form["email"],
+                hashed_password,
+                request.form["role"]
+            )
         )
+
         conn.commit()
         conn.close()
+
         flash("Registration successful")
         return redirect("/login")
 
     return render_template("register.html")
 
+
 # LOGIN
-@app.route("/login", methods=["GET","POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         conn = get_db()
+
         user = conn.execute(
-            "SELECT * FROM users WHERE email=? AND password=?",
-            (request.form["email"], request.form["password"])
+            "SELECT * FROM users WHERE email=?",
+            (request.form["email"],)
         ).fetchone()
+
         conn.close()
 
-        if user:
+        if user and check_password_hash(user[3], request.form["password"]):
             session["role"] = user[4]
+            session["user_id"] = user[0]
+
             flash("Login successful")
 
             if user[4] == "admin":
                 return redirect("/admin_dashboard")
             else:
                 return redirect("/")
-
         else:
             flash("Invalid login")
 
     return render_template("login.html")
+
 
 # LOGOUT
 @app.route("/logout")
@@ -78,19 +120,18 @@ def logout():
     session.clear()
     return redirect("/")
 
+
 # ADMIN DASHBOARD
 @app.route("/admin_dashboard")
+@login_required("admin")
 def admin_dashboard():
-    if session.get("role") != "admin":
-        return redirect("/login")
     return render_template("admin_dashboard.html")
+
 
 # UPLOAD PDFs
 @app.route("/upload", methods=["POST"])
+@login_required("admin")
 def upload():
-    if session.get("role") != "admin":
-        return redirect("/login")
-
     files = request.files.getlist("file")
 
     if not files:
@@ -101,7 +142,7 @@ def upload():
     merged_df = pd.DataFrame()
 
     for file in files:
-        if file.filename == "":
+        if file.filename == "" or not allowed_file(file.filename):
             continue
 
         path = os.path.join(UPLOAD_FOLDER, file.filename)
@@ -109,8 +150,10 @@ def upload():
 
         try:
             df = extract_timetable(path)
-        except:
-            df = pd.DataFrame()
+        except Exception as e:
+            print("Parser error:", e)
+            flash(f"Error processing {file.filename}")
+            continue
 
         if not df.empty:
             merged_df = pd.concat([merged_df, df])
@@ -122,6 +165,7 @@ def upload():
 
     if merged_df.empty:
         flash("No data extracted from PDFs")
+        conn.close()
         return redirect("/admin_dashboard")
 
     merged_df.drop_duplicates(inplace=True)
@@ -133,16 +177,20 @@ def upload():
     flash("PDFs uploaded and processed successfully")
     return redirect("/history")
 
+
 # HISTORY
 @app.route("/history")
+@login_required()
 def history():
     conn = get_db()
     data = conn.execute("SELECT * FROM uploads").fetchall()
     conn.close()
     return render_template("history.html", data=data)
 
+
 # VIEW CONSOLIDATED TIMETABLE
 @app.route("/view_consolidated")
+@login_required()
 def view_consolidated():
     conn = get_db()
 
@@ -167,49 +215,46 @@ def view_consolidated():
 
     df = df.sort_values(by=[date_col])
 
-    grouped_html = ""
+    rows_html = []
 
     for date, group in df.groupby(date_col):
-        grouped_html += f"""
-        <tr>
-            <td rowspan="{len(group)}">{date}</td>
-
-
         first = True
 
         for _, row in group.iterrows():
-            if not first:
-                grouped_html += "<tr>"
-
-            grouped_html += f"""
+            rows_html.append(f"""
+            <tr>
+                {"<td rowspan='" + str(len(group)) + "'>" + str(date) + "</td>" if first else ""}
                 <td>{row.get('FN_AN','AN')}</td>
-                <td>{row.get('HOSTCOLLEGE','XW')}</td>
-                <td>{row.get('REGULATION','R22')}</td>
-                <td>{row.get('EXAM_YEAR','2')}</td>
-                <td>{row.get('SEMESTER','1')}</td>
-                <td>{row.get('REG_SUP','REG')}</td>
+                <td>{row.get('HOSTCOLLEGE','')}</td>
+                <td>{row.get('REGULATION','')}</td>
+                <td>{row.get('EXAM_YEAR','')}</td>
+                <td>{row.get('SEMESTER','')}</td>
+                <td>{row.get('REG_SUP','')}</td>
                 <td>{row.get(branch_col,'')}</td>
-                <td>{row.get('BRANCHNAME', row.get(branch_col,''))}</td>
+                <td>{row.get('BRANCHNAME','')}</td>
                 <td>{row.get(subject_col,'')}</td>
                 <td>{row.get('SUBJECTCODE','')}</td>
                 <td>{row.get('COUNT','')}</td>
             </tr>
-    
+            """)
+            first = False
 
-          first = False
+    return render_template("timetable.html", table_html="".join(rows_html))
 
-      return render_template("timetable.html", table_html=grouped_html)
 
 # DOWNLOAD PAGE
 @app.route("/download_excel")
+@login_required()
 def download_excel():
     conn = get_db()
     data = conn.execute("SELECT * FROM uploads").fetchall()
     conn.close()
     return render_template("download_excel.html", data=data)
 
+
 # EXPORT EXCEL
 @app.route("/export_excel/<filename>")
+@login_required()
 def export_excel(filename):
     conn = get_db()
 
@@ -227,8 +272,10 @@ def export_excel(filename):
 
     return send_file(file_path, as_attachment=True)
 
+
 # DELETE FILE
 @app.route("/delete/<filename>")
+@login_required("admin")
 def delete_file(filename):
     conn = get_db()
     conn.execute("DELETE FROM uploads WHERE filename=?", (filename,))
@@ -242,8 +289,8 @@ def delete_file(filename):
     flash("File deleted successfully")
     return redirect("/history")
 
+
 # RUN APP
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
-

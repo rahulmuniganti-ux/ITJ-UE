@@ -33,5 +33,7 @@ def extract_timetable(file_path):
                 "BRANCH": "CSE",
                 "SUBJECT": subject
             })
+            if not data:
+    return pd.DataFrame(columns=["DATE","SESSION","BRANCH","SUBJECT"])
 
-    return pd.DataFrame(data)
+return pd.DataFrame(data)

@@ -32,7 +32,7 @@ def get_db():
 # HOME
 @app.route("/")
 def home():
-    return "App Running Successfully 🚀"
+    return render_template("index.html")
 
 # REGISTER
 @app.route("/register", methods=["GET","POST"])

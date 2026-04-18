@@ -1,36 +1,354 @@
-<div class="row text-center">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - ITJ-UE Portal</title>
+    <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-{% if session['role'] == 'admin' %}
-<nav class="navbar navbar-dark bg-primary">
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+        }
 
-<div class="container">
+        /* Navigation Bar */
+        .navbar {
+            background: rgba(13, 27, 62, 0.95);
+            padding: 15px 0;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.3);
+        }
 
-<img src="{{ url_for('static', filename='images/jntuh_logo.png') }}" 
-width="50" class="me-3">
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
 
-<span class="navbar-brand">
-JNTUH Examination Portal
-</span>
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
 
-</div>
+        .logo-section img {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+        }
 
+        .logo-section h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Flash Messages */
+        .flash-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .flash {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .flash-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .flash-error {
+            background: #f44336;
+            color: white;
+        }
+
+        .flash-warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        h2 {
+            color: white;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 32px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Dashboard Cards Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .dashboard-card {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            text-align: center;
+            transition: 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .dashboard-card .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .dashboard-card h3 {
+            color: #1e3c72;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .dashboard-card p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Color variants for cards */
+        .card-primary {
+            border-top: 5px solid #2a5298;
+        }
+
+        .card-success {
+            border-top: 5px solid #4caf50;
+        }
+
+        .card-warning {
+            border-top: 5px solid #ff9800;
+        }
+
+        .card-info {
+            border-top: 5px solid #00bcd4;
+        }
+
+        .card-danger {
+            border-top: 5px solid #f44336;
+        }
+
+        /* Welcome Section */
+        .welcome-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .welcome-section h2 {
+            color: #1e3c72;
+            margin-bottom: 10px;
+            text-shadow: none;
+        }
+
+        .welcome-section p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(13, 27, 62, 0.95);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 50px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .nav-links {
+                justify-content: center;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .logo-section h1 {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="logo-section">
+            <!-- Option 1: If you have JNTUH logo -->
+            <!-- <img src="{{ url_for('static', filename='images/jntuh_logo.png') }}" alt="JNTUH Logo"> -->
+            
+            <!-- Option 2: Text-based (current) -->
+            <div style="width: 50px; height: 50px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #1e3c72; font-size: 20px;">JU</div>
+            
+            <h1>JNTUH Examination Portal</h1>
+        </div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            {% if session.get('role') == 'admin' %}
+                <a href="/admin_dashboard">Dashboard</a>
+                <a href="/history">History</a>
+            {% endif %}
+            {% if session.get('role') %}
+                <a href="/view_consolidated">Timetable</a>
+                <a href="/search">Search</a>
+                <a href="/logout">Logout ({{ session.get('user_name', 'User') }})</a>
+            {% else %}
+                <a href="/login">Login</a>
+                <a href="/register">Register</a>
+            {% endif %}
+        </div>
+    </div>
 </nav>
-<div class="col-md-3">
-<a href="/upload" class="btn btn-primary w-100 p-4">Upload Timetable</a>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-container">
+            {% for category, message in messages %}
+                <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+<!-- Main Content -->
+<div class="main-content">
+
+    <!-- Welcome Section -->
+    <div class="welcome-section">
+        <h2>Welcome, {{ session.get('user_name', 'User') }}! 👋</h2>
+        <p>
+            {% if session.get('role') == 'admin' %}
+                You have full administrative access to manage timetables and system data.
+            {% else %}
+                Access your examination timetable and download reports.
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- Dashboard Cards -->
+    <div class="dashboard-grid">
+
+        {% if session.get('role') == 'admin' %}
+        <!-- Admin: Upload Timetable -->
+        <a href="/admin_dashboard" class="dashboard-card card-primary">
+            <div class="icon">📤</div>
+            <h3>Upload Timetable</h3>
+            <p>Upload and process PDF timetable files for automatic extraction</p>
+        </a>
+        {% endif %}
+
+        <!-- View Timetable -->
+        <a href="/view_consolidated" class="dashboard-card card-success">
+            <div class="icon">📋</div>
+            <h3>View Timetable</h3>
+            <p>Browse the complete examination timetable in organized format</p>
+        </a>
+
+        <!-- Download Excel -->
+        <a href="/export_excel" class="dashboard-card card-warning">
+            <div class="icon">📥</div>
+            <h3>Download Excel</h3>
+            <p>Export timetable data to Excel spreadsheet with multiple sheets</p>
+        </a>
+
+        <!-- Search -->
+        <a href="/search" class="dashboard-card card-info">
+            <div class="icon">🔍</div>
+            <h3>Search Records</h3>
+            <p>Search timetable by subject, branch, date, or subject code</p>
+        </a>
+
+        {% if session.get('role') == 'admin' %}
+        <!-- Admin: View History -->
+        <a href="/history" class="dashboard-card card-info">
+            <div class="icon">📜</div>
+            <h3>Upload History</h3>
+            <p>View all uploaded files and manage previous uploads</p>
+        </a>
+
+        <!-- Admin: View by Date -->
+        <a href="/view_by_date" class="dashboard-card card-primary">
+            <div class="icon">📆</div>
+            <h3>View by Date</h3>
+            <p>Browse timetable organized by examination dates</p>
+        </a>
+        {% endif %}
+
+    </div>
+
 </div>
 
-{% endif %}
+<!-- Footer -->
+<footer class="footer">
+    <p>&copy; 2026 ITJ-UE Portal | JNTUH Examination Management System</p>
+</footer>
 
-<div class="col-md-3">
-<a href="/timetable" class="btn btn-success w-100 p-4">View Timetable</a>
-</div>
-
-<div class="col-md-3">
-<a href="/export_excel" class="btn btn-warning w-100 p-4">Download Excel</a>
-</div>
-
-<div class="col-md-3">
-<a href="/export_pdf" class="btn btn-info w-100 p-4">Download PDF</a>
-</div>
-
-</div>
+</body>
+</html>

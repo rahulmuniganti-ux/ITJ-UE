@@ -4,7 +4,8 @@
 <head>
 
 <meta charset="UTF-8">
-<title>ITJ-UE</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ITJ-UE Portal</title>
 
 <style>
 
@@ -21,13 +22,29 @@ background:#f4f6f9;
 .header{
 text-align:center;
 background:white;
+padding: 20px 0;
 }
 
+.header h1{
+color: #1a237e;
+margin: 0;
+font-size: 32px;
+}
+
+.header p{
+color: #666;
+margin: 5px 0 0 0;
+font-size: 14px;
+}
+
+/* If you have banner image, uncomment this */
+/*
 .header img{
 width:100%;
 max-height:150px;
 object-fit:contain;
 }
+*/
 
 /* NAVBAR */
 
@@ -38,6 +55,7 @@ padding:12px;
 display:flex;
 justify-content:space-between;
 align-items:center;
+flex-wrap: wrap;
 }
 
 .menu a{
@@ -54,7 +72,7 @@ text-decoration:underline;
 /* MAIN CONTENT AREA */
 
 .container{
-padding:40px;
+padding:40px 20px;
 display:flex;
 justify-content:center;
 }
@@ -93,6 +111,15 @@ transition:0.3s;
 transform:scale(1.05);
 }
 
+.card h3{
+color:#1a237e;
+margin-bottom:10px;
+}
+
+.card p{
+line-height:1.5;
+}
+
 /* TABLE STYLE */
 
 table{
@@ -126,10 +153,15 @@ background:#1a237e;
 color:white;
 border-radius:5px;
 cursor:pointer;
+font-weight: bold;
 }
 
 button:hover{
 background:#3949ab;
+}
+
+a button{
+text-decoration: none;
 }
 
 /* FLASH */
@@ -143,6 +175,22 @@ display:inline-block;
 margin:10px;
 }
 
+/* Responsive */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .main-card {
+        padding: 20px;
+    }
+    
+    .card {
+        width: 100%;
+    }
+}
+
 </style>
 
 </head>
@@ -152,7 +200,12 @@ margin:10px;
 <!-- 🔵 BANNER -->
 
 <div class="header">
-<img src="{{ url_for('static', filename='images/banner.png') }}">
+    <!-- Option 1: Text-based header (current) -->
+    <h1>ITJ-UE Portal</h1>
+    <p>Intelligent Timetable Generator - University Exams</p>
+    
+    <!-- Option 2: If you have banner image, replace above with: -->
+    <!-- <img src="{{ url_for('static', filename='images/banner.png') }}" alt="ITJ-UE Banner"> -->
 </div>
 
 <!-- 🔵 NAVBAR -->
@@ -168,11 +221,14 @@ margin:10px;
 {% if session.get('role') == "admin" %}
 <a href="/admin_dashboard">Dashboard</a>
 <a href="/history">History</a>
-<a href="/download_excel">Download</a>
+<a href="/view_consolidated">View Timetable</a>
+<a href="/search">Search</a>
+<a href="/export_excel">Download Excel</a>
 <a href="/logout">Logout</a>
 {% elif session.get('role') == "student" %}
-<a href="/view_consolidated">View</a>
-<a href="/export_excel">Download</a>
+<a href="/view_consolidated">View Timetable</a>
+<a href="/search">Search</a>
+<a href="/export_excel">Download Excel</a>
 <a href="/logout">Logout</a>
 {% else %}
 <a href="/login">Login</a>
@@ -185,11 +241,11 @@ margin:10px;
 
 <!-- 🔵 FLASH -->
 
-{% with messages = get_flashed_messages() %}
+{% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 <div style="text-align:center">
-{% for message in messages %}
-<div class="flash">{{ message }}</div>
+{% for category, message in messages %}
+<div class="flash flash-{{ category }}">{{ message }}</div>
 {% endfor %}
 </div>
 {% endif %}

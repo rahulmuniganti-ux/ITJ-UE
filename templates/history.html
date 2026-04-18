@@ -1,44 +1,495 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload History - ITJ-UE Portal</title>
+    <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-{% block content %}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+        }
 
-<h2>Upload History</h2>
+        /* Navigation Bar */
+        .navbar {
+            background: rgba(13, 27, 62, 0.95);
+            padding: 15px 0;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.3);
+        }
 
-<br>
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
 
-<table>
+        .logo {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
 
-<tr>
-<th>ID</th>
-<th>PDF Name</th>
-<th>Upload Time</th>
-<th>View</th>
-<th>Delete</th>
-</tr>
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
 
-{% for row in data %}
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
 
-<tr>
-<td>{{ row[0] }}</td>
-<td>{{ row[1] }}</td>
-<td>{{ row[2] }}</td>
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.2);
+        }
 
-<td>
-<a href="/view_consolidated">
-<button>View</button>
-</a>
-</td>
+        /* Flash Messages */
+        .flash-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
 
-<td>
-<a href="/delete/{{ row[1] }}">
-<button style="background:red;">Delete</button>
-</a>
-</td>
+        .flash {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            animation: slideIn 0.3s ease;
+        }
 
-</tr>
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
 
-{% endfor %}
+        .flash-success {
+            background: #4caf50;
+            color: white;
+        }
 
-</table>
+        .flash-error {
+            background: #f44336;
+            color: white;
+        }
 
-{% endblock %}
+        .flash-warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        h2 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 32px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Statistics Cards */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .stat-card .number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #2a5298;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        /* Table Container */
+        .table-container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            overflow-x: auto;
+        }
+
+        .table-container h3 {
+            color: #1e3c72;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Search Box */
+        .search-box {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .search-box input {
+            padding: 10px 20px;
+            width: 100%;
+            max-width: 400px;
+            border: 2px solid #2a5298;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #1e3c72;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+        }
+
+        th {
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #333;
+        }
+
+        tbody tr {
+            transition: 0.2s;
+        }
+
+        tbody tr:hover {
+            background: #f5f8ff;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+
+        tbody tr:nth-child(even):hover {
+            background: #f5f8ff;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            margin: 2px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(42, 82, 152, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.4);
+        }
+
+        .btn-large {
+            padding: 12px 30px;
+            font-size: 16px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state .icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(13, 27, 62, 0.95);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 50px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .nav-links {
+                justify-content: center;
+            }
+
+            .table-container {
+                padding: 15px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+
+            .btn {
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<nav class="navbar">
+    <div class="nav-container">
+        <h1 class="logo">ITJ-UE Portal</h1>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            {% if session.get('role') == 'admin' %}
+                <a href="/admin_dashboard">Dashboard</a>
+                <a href="/history">History</a>
+            {% endif %}
+            {% if session.get('role') %}
+                <a href="/view_consolidated">Timetable</a>
+                <a href="/search">Search</a>
+                <a href="/logout">Logout</a>
+            {% else %}
+                <a href="/login">Login</a>
+                <a href="/register">Register</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-container">
+            {% for category, message in messages %}
+                <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+<!-- Main Content -->
+<div class="main-content">
+    <h2>📜 Upload History</h2>
+
+    <!-- Statistics -->
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="number">{{ data|length if data else 0 }}</div>
+            <div class="label">Total Uploads</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ timetable_count if timetable_count else 0 }}</div>
+            <div class="label">Timetable Entries</div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        {% if session.get('role') == 'admin' %}
+        <a href="/admin_dashboard" class="btn btn-primary btn-large">📤 Upload New PDF</a>
+        {% endif %}
+        <a href="/view_consolidated" class="btn btn-success btn-large">📋 View Timetable</a>
+        <a href="/export_excel" class="btn btn-warning btn-large">📥 Download Excel</a>
+        {% if session.get('role') == 'admin' and data and data|length > 0 %}
+        <a href="/clear_all" class="btn btn-danger btn-large" onclick="return confirm('⚠️ Are you sure you want to delete ALL uploads and timetable data? This action cannot be undone!')">🗑️ Clear All Data</a>
+        {% endif %}
+    </div>
+
+    <!-- Upload History Table -->
+    <div class="table-container">
+        <h3>📁 Uploaded Files</h3>
+        
+        {% if data and data|length > 0 %}
+        
+        <!-- Search Box -->
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 Search by filename or date..." onkeyup="filterTable()">
+        </div>
+
+        <table id="historyTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>PDF Filename</th>
+                    <th>Upload Time</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                <tr>
+                    <td><strong>#{{ row[0] }}</strong></td>
+                    <td>📄 {{ row[1] }}</td>
+                    <td>🕒 {{ row[2] }}</td>
+                    <td>
+                        <a href="/view_consolidated" class="btn btn-success">👁️ View</a>
+                        <a href="/export_excel" class="btn btn-primary">📥 Download</a>
+                        {% if session.get('role') == 'admin' %}
+                        <a href="/delete/{{ row[0] }}" class="btn btn-danger" onclick="return confirm('⚠️ Delete this file?\n\nFilename: {{ row[1] }}\nUploaded: {{ row[2] }}\n\nThis will remove the file and its timetable data.')">🗑️ Delete</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% else %}
+        
+        <div class="empty-state">
+            <div class="icon">📭</div>
+            <h3>No Upload History</h3>
+            <p>No timetable files have been uploaded yet.</p>
+            {% if session.get('role') == 'admin' %}
+            <br><br>
+            <a href="/admin_dashboard" class="btn btn-primary btn-large">📤 Upload Your First PDF</a>
+            {% endif %}
+        </div>
+
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <p>&copy; 2026 ITJ-UE Portal | JNTUH Examination Management System</p>
+</footer>
+
+<script>
+// Search/Filter Table Function
+function filterTable() {
+    const input = document.getElementById('searchInput');
+    const filter = input.value.toUpperCase();
+    const table = document.getElementById('historyTable');
+    const tr = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < tr.length; i++) {
+        const tdFilename = tr[i].getElementsByTagName('td')[1];
+        const tdDate = tr[i].getElementsByTagName('td')[2];
+        
+        if (tdFilename || tdDate) {
+            const filenameValue = tdFilename.textContent || tdFilename.innerText;
+            const dateValue = tdDate.textContent || tdDate.innerText;
+            
+            if (filenameValue.toUpperCase().indexOf(filter) > -1 || 
+                dateValue.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = '';
+            } else {
+                tr[i].style.display = 'none';
+            }
+        }
+    }
+}
+</script>
+
+</body>
+</html>

@@ -37,99 +37,109 @@ def init_database():
     
     db_path = DATABASE_PATH
     
-    # Check if database exists
-    if not os.path.exists(db_path):
-        print(f"🔧 Database not found at {db_path}, creating...")
-        
-        # Run create_db.py logic
+    try:
+        # Try to connect and check if tables exist
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
-        # Create users table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,
-                role TEXT NOT NULL,
-                roll TEXT,
-                branch TEXT,
-                year TEXT,
-                semester TEXT,
-                regulation TEXT DEFAULT 'R22',
-                department TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_login TIMESTAMP
-            )
-        ''')
+        # Check if users table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+        table_exists = cursor.fetchone()
         
-        # Create timetable table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS timetable (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT,
-                n_an TEXT,
-                college TEXT,
-                reg TEXT,
-                year TEXT,
-                sem TEXT,
-                type TEXT,
-                code TEXT,
-                branch TEXT,
-                subject TEXT,
-                sub_code TEXT,
-                count TEXT,
-                pdf_name TEXT,
-                upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
+        if not table_exists:
+            print(f"🔧 Database tables not found, creating...")
+            
+            # Create users table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    password TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    roll TEXT,
+                    branch TEXT,
+                    year TEXT,
+                    semester TEXT,
+                    regulation TEXT DEFAULT 'R22',
+                    department TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_login TIMESTAMP
+                )
+            ''')
+            
+            # Create timetable table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS timetable (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    date TEXT,
+                    n_an TEXT,
+                    college TEXT,
+                    reg TEXT,
+                    year TEXT,
+                    sem TEXT,
+                    type TEXT,
+                    code TEXT,
+                    branch TEXT,
+                    subject TEXT,
+                    sub_code TEXT,
+                    count TEXT,
+                    pdf_name TEXT,
+                    upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Create uploads table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS uploads (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    filename TEXT NOT NULL,
+                    original_filename TEXT NOT NULL,
+                    file_path TEXT NOT NULL,
+                    file_size INTEGER,
+                    uploaded_by INTEGER,
+                    records_extracted INTEGER DEFAULT 0,
+                    upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (uploaded_by) REFERENCES users(id)
+                )
+            ''')
+            
+            # Create admin_logs table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS admin_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    admin_id INTEGER,
+                    action TEXT NOT NULL,
+                    description TEXT,
+                    ip_address TEXT,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (admin_id) REFERENCES users(id)
+                )
+            ''')
+            
+            # Create search_history table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS search_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    search_query TEXT,
+                    results_count INTEGER,
+                    search_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                )
+            ''')
+            
+            conn.commit()
+            print(f"✅ Database initialized successfully at {db_path}")
+        else:
+            print(f"✅ Database already exists at {db_path}")
         
-        # Create uploads table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS uploads (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                filename TEXT NOT NULL,
-                original_filename TEXT NOT NULL,
-                file_path TEXT NOT NULL,
-                file_size INTEGER,
-                uploaded_by INTEGER,
-                records_extracted INTEGER DEFAULT 0,
-                upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (uploaded_by) REFERENCES users(id)
-            )
-        ''')
-        
-        # Create admin_logs table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS admin_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                admin_id INTEGER,
-                action TEXT NOT NULL,
-                description TEXT,
-                ip_address TEXT,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (admin_id) REFERENCES users(id)
-            )
-        ''')
-        
-        # Create search_history table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS search_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                search_query TEXT,
-                results_count INTEGER,
-                search_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id)
-            )
-        ''')
-        
-        conn.commit()
         conn.close()
-        print(f"✅ Database initialized successfully at {db_path}")
-    else:
-        print(f"✅ Database already exists at {db_path}")
+        
+    except Exception as e:
+        print(f"❌ Database initialization error: {e}")
+        import traceback
+        traceback.print_exc()
 
 # Initialize database when app starts
 init_database()

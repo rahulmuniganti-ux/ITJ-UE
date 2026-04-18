@@ -1,37 +1,405 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Excel - ITJ-UE Portal</title>
+    <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-{% block content %}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+        }
 
-<h2>Download Timetables</h2>
+        /* Navigation Bar */
+        .navbar {
+            background: rgba(13, 27, 62, 0.95);
+            padding: 15px 0;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.3);
+        }
 
-<br>
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
 
-<table>
+        .logo {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
 
-<tr>
-<th>ID</th>
-<th>PDF Name</th>
-<th>Upload Time</th>
-<th>Download</th>
-</tr>
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
 
-{% for row in data %}
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
 
-<tr>
-<td>{{ row[0] }}</td>
-<td>{{ row[1] }}</td>
-<td>{{ row[2] }}</td>
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.2);
+        }
 
-<td>
-<a href="/export_excel/{{ row[1] }}">
-<button>Download</button>
-</a>
-</td>
+        /* Flash Messages */
+        .flash-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
 
-</tr>
+        .flash {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            animation: slideIn 0.3s ease;
+        }
 
-{% endfor %}
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
 
-</table>
+        .flash-success {
+            background: #4caf50;
+            color: white;
+        }
 
-{% endblock %}
+        .flash-error {
+            background: #f44336;
+            color: white;
+        }
+
+        .flash-warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        h2 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 32px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Info Card */
+        .info-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .info-card h3 {
+            color: #1e3c72;
+            margin-bottom: 15px;
+        }
+
+        .info-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* Quick Download Section */
+        .quick-download {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .quick-download h3 {
+            color: #1e3c72;
+            margin-bottom: 20px;
+        }
+
+        /* Table Container */
+        .table-container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            overflow-x: auto;
+        }
+
+        .table-container h3 {
+            color: #1e3c72;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+        }
+
+        th {
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #333;
+        }
+
+        tbody tr {
+            transition: 0.2s;
+        }
+
+        tbody tr:hover {
+            background: #f5f8ff;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+
+        tbody tr:nth-child(even):hover {
+            background: #f5f8ff;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(42, 82, 152, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.4);
+        }
+
+        .btn-large {
+            padding: 15px 40px;
+            font-size: 18px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(13, 27, 62, 0.95);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 50px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .nav-links {
+                justify-content: center;
+            }
+
+            .table-container {
+                padding: 15px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+
+            .btn {
+                padding: 8px 15px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<nav class="navbar">
+    <div class="nav-container">
+        <h1 class="logo">ITJ-UE Portal</h1>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            {% if session.get('role') == 'admin' %}
+                <a href="/admin_dashboard">Dashboard</a>
+                <a href="/history">History</a>
+            {% endif %}
+            {% if session.get('role') %}
+                <a href="/view_consolidated">Timetable</a>
+                <a href="/search">Search</a>
+                <a href="/logout">Logout</a>
+            {% else %}
+                <a href="/login">Login</a>
+                <a href="/register">Register</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-container">
+            {% for category, message in messages %}
+                <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+<!-- Main Content -->
+<div class="main-content">
+    <h2>📥 Download Timetables</h2>
+
+    <!-- Info Card -->
+    <div class="info-card">
+        <h3>📊 Export Options</h3>
+        <p>Download the complete consolidated timetable or individual file exports in Excel format with multiple sheets including full timetable, date-wise breakdown, branch summary, and exam type analysis.</p>
+    </div>
+
+    <!-- Quick Download Full Timetable -->
+    <div class="quick-download">
+        <h3>⚡ Quick Download - Complete Timetable</h3>
+        <p style="margin-bottom: 20px;">Download the entire consolidated timetable in Excel format</p>
+        <a href="/export_excel" class="btn btn-success btn-large">📥 Download Complete Excel</a>
+    </div>
+
+    <!-- Upload History Table -->
+    <div class="table-container">
+        <h3>📜 Upload History & Individual Downloads</h3>
+        
+        {% if data and data|length > 0 %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>PDF Filename</th>
+                    <th>Upload Time</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                <tr>
+                    <td><strong>#{{ row[0] }}</strong></td>
+                    <td>📄 {{ row[1] }}</td>
+                    <td>🕒 {{ row[2] }}</td>
+                    <td>
+                        <a href="/export_excel" class="btn btn-success">📥 Download</a>
+                        {% if session.get('role') == 'admin' %}
+                        <a href="/delete/{{ row[0] }}" class="btn btn-danger" onclick="return confirm('Delete this file?')">🗑️ Delete</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <div class="icon">📭</div>
+            <h3>No Uploads Yet</h3>
+            <p>No timetable files have been uploaded yet.</p>
+            {% if session.get('role') == 'admin' %}
+            <br>
+            <a href="/admin_dashboard" class="btn btn-primary">Upload Timetable PDFs</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <p>&copy; 2026 ITJ-UE Portal | JNTUH Examination Management System</p>
+</footer>
+
+</body>
+</html>

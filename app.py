@@ -8,19 +8,29 @@ import re
 from datetime import datetime
 from io import BytesIO
 
-app = Flask(__name__)
-app.secret_key = "your_secret_key_here_change_in_production"
+# ==================== FLASK APP INITIALIZATION ====================
 
-# Configuration
-UPLOAD_FOLDER = 'uploads'
+app = Flask(__name__)
+
+# CRITICAL: Change this secret key in production (use environment variable)
+app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key_here_change_in_production')
+
+# ==================== CONFIGURATION ====================
+
+# For Render deployment - use /tmp for uploads (ephemeral storage)
+UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', '/tmp/uploads')
 ALLOWED_EXTENSIONS = {'pdf'}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
+# Create upload folder if it doesn't exist
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
+
+# Database path - for Render, use persistent disk or environment variable
+DATABASE_PATH = os.environ.get('DATABASE_PATH', 'database.db')
 
 # ==================== HELPER FUNCTIONS ====================
 
@@ -30,7 +40,7 @@ def allowed_file(filename):
 
 def get_db_connection():
     """Get database connection"""
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -44,8 +54,8 @@ def log_admin_action(admin_id, action, description):
         """, (admin_id, action, description, request.remote_addr))
         conn.commit()
         conn.close()
-    except:
-        pass
+    except Exception as e:
+        print(f"Error logging admin action: {e}")
 
 def extract_timetable_from_pdf(file_path):
     """Extract timetable data from PDF"""
@@ -181,10 +191,10 @@ def index():
 def register():
     """User registration"""
     if request.method == 'POST':
-        name = request.form.get('name')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        role = request.form.get('role')
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        role = request.form.get('role', '').strip()
 
         if not all([name, email, password, role]):
             flash('All fields are required!', 'error')
@@ -219,10 +229,10 @@ def register():
 def register_admin():
     """Admin registration"""
     if request.method == 'POST':
-        name = request.form.get('name')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        department = request.form.get('department')
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        department = request.form.get('department', '').strip()
 
         if not all([name, email, password, department]):
             flash('All fields are required!', 'error')
@@ -256,14 +266,14 @@ def register_admin():
 def register_student():
     """Student registration"""
     if request.method == 'POST':
-        name = request.form.get('name')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        roll = request.form.get('roll')
-        branch = request.form.get('branch')
-        year = request.form.get('year')
-        semester = request.form.get('semester')
-        regulation = request.form.get('regulation', 'R22')
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        roll = request.form.get('roll', '').strip()
+        branch = request.form.get('branch', '').strip()
+        year = request.form.get('year', '').strip()
+        semester = request.form.get('semester', '').strip()
+        regulation = request.form.get('regulation', 'R22').strip()
 
         if not all([name, email, password, roll, branch, year, semester]):
             flash('All fields are required!', 'error')
@@ -297,8 +307,8 @@ def register_student():
 def login():
     """User login"""
     if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
 
         if not email or not password:
             flash('Email and password are required!', 'error')
@@ -318,6 +328,11 @@ def login():
                 session['branch'] = user['branch']
                 session['year'] = user['year']
                 session['semester'] = user['semester']
+                session['roll'] = user['roll']
+                session['regulation'] = user['regulation']
+            
+            if user['role'] == 'admin':
+                session['department'] = user['department']
             
             # Update last login
             conn.execute('UPDATE users SET last_login = ? WHERE id = ?', 
@@ -362,13 +377,22 @@ def admin_dashboard():
     total_uploads = conn.execute('SELECT COUNT(*) as count FROM uploads').fetchone()['count']
     total_records = conn.execute('SELECT COUNT(*) as count FROM timetable').fetchone()['count']
     total_students = conn.execute('SELECT COUNT(*) as count FROM users WHERE role = "student"').fetchone()['count']
+    total_admins = conn.execute('SELECT COUNT(*) as count FROM users WHERE role = "admin"').fetchone()['count']
     
     # Get recent uploads
     recent_uploads = conn.execute('''
-        SELECT * FROM uploads 
-        ORDER BY upload_time DESC 
+        SELECT u.*, us.name as uploader_name
+        FROM uploads u
+        LEFT JOIN users us ON u.uploaded_by = us.id
+        ORDER BY u.upload_time DESC 
         LIMIT 5
     ''').fetchall()
+    
+    # Get unique dates
+    unique_dates = conn.execute('SELECT COUNT(DISTINCT date) as count FROM timetable').fetchone()['count']
+    
+    # Get unique branches
+    unique_branches = conn.execute('SELECT COUNT(DISTINCT branch) as count FROM timetable WHERE branch != ""').fetchone()['count']
     
     conn.close()
 
@@ -376,7 +400,10 @@ def admin_dashboard():
                          total_uploads=total_uploads,
                          total_records=total_records,
                          total_students=total_students,
-                         recent_uploads=recent_uploads)
+                         total_admins=total_admins,
+                         recent_uploads=recent_uploads,
+                         unique_dates=unique_dates,
+                         unique_branches=unique_branches)
 
 @app.route('/student_dashboard')
 def student_dashboard():
@@ -387,15 +414,36 @@ def student_dashboard():
 
     conn = get_db_connection()
     
+    # Get student's branch and year
+    student_branch = session.get('branch', '')
+    student_year = session.get('year', '')
+    student_semester = session.get('semester', '')
+    
     # Get statistics
     exam_count = conn.execute('SELECT COUNT(DISTINCT date) as count FROM timetable').fetchone()['count']
     subject_count = conn.execute('SELECT COUNT(DISTINCT subject) as count FROM timetable').fetchone()['count']
+    
+    # Get student-specific exams
+    my_exams = conn.execute('''
+        SELECT COUNT(*) as count FROM timetable 
+        WHERE branch = ? AND year = ?
+    ''', (student_branch, student_year)).fetchone()['count']
+    
+    # Get upcoming exams (next 7 days)
+    upcoming_exams = conn.execute('''
+        SELECT * FROM timetable 
+        WHERE branch = ? AND year = ?
+        ORDER BY date
+        LIMIT 5
+    ''', (student_branch, student_year)).fetchall()
     
     conn.close()
 
     return render_template('student_dashboard.html',
                          exam_count=exam_count,
-                         subject_count=subject_count)
+                         subject_count=subject_count,
+                         my_exams=my_exams,
+                         upcoming_exams=upcoming_exams)
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -468,7 +516,7 @@ def upload():
 
         except Exception as e:
             flash(f'Upload failed: {str(e)}', 'error')
-            if os.path.exists(filepath):
+            if 'filepath' in locals() and os.path.exists(filepath):
                 os.remove(filepath)
             return redirect(url_for('upload'))
 
@@ -485,28 +533,8 @@ def view_consolidated():
     records = conn.execute('SELECT * FROM timetable ORDER BY date, branch').fetchall()
     conn.close()
 
-    # Generate HTML table
-    table_html = ""
-    for record in records:
-        table_html += f"""
-        <tr>
-            <td>{record['date']}</td>
-            <td>{record['n_an']}</td>
-            <td>{record['college']}</td>
-            <td>{record['reg']}</td>
-            <td>{record['year']}</td>
-            <td>{record['sem']}</td>
-            <td>{record['type']}</td>
-            <td>{record['code']}</td>
-            <td>{record['branch']}</td>
-            <td>{record['subject']}</td>
-            <td>{record['sub_code']}</td>
-            <td>{record['count']}</td>
-        </tr>
-        """
-
     return render_template('timetable.html', 
-                         table_html=table_html,
+                         records=records,
                          total_records=len(records))
 
 @app.route('/search', methods=['GET', 'POST'])
@@ -534,12 +562,15 @@ def search():
                  f'%{search_query}%', f'%{search_query}%')).fetchall()
             
             # Log search
-            conn.execute('''
-                INSERT INTO search_history (user_id, search_query, results_count)
-                VALUES (?, ?, ?)
-            ''', (session['user_id'], search_query, len(results)))
+            try:
+                conn.execute('''
+                    INSERT INTO search_history (user_id, search_query, results_count)
+                    VALUES (?, ?, ?)
+                ''', (session['user_id'], search_query, len(results)))
+                conn.commit()
+            except:
+                pass
             
-            conn.commit()
             conn.close()
 
     return render_template('search.html', 
@@ -580,34 +611,36 @@ def export_excel():
         flash('Please login to download.', 'error')
         return redirect(url_for('login'))
 
-    conn = get_db_connection()
-    records = conn.execute('SELECT * FROM timetable ORDER BY date, branch').fetchall()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        records = conn.execute('SELECT * FROM timetable ORDER BY date, branch').fetchall()
+        conn.close()
 
-    # Convert to DataFrame
-    df = pd.DataFrame([dict(record) for record in records])
-    
-    # Remove internal columns
-    if 'id' in df.columns:
-        df = df.drop('id', axis=1)
-    if 'pdf_name' in df.columns:
-        df = df.drop('pdf_name', axis=1)
-    if 'upload_time' in df.columns:
-        df = df.drop('upload_time', axis=1)
+        # Convert to DataFrame
+        df = pd.DataFrame([dict(record) for record in records])
+        
+        # Remove internal columns
+        columns_to_drop = ['id', 'pdf_name', 'upload_time']
+        for col in columns_to_drop:
+            if col in df.columns:
+                df = df.drop(col, axis=1)
 
-    # Create Excel file in memory
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, sheet_name='Timetable', index=False)
-    
-    output.seek(0)
+        # Create Excel file in memory
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name='Timetable', index=False)
+        
+        output.seek(0)
 
-    return send_file(
-        output,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        as_attachment=True,
-        download_name=f'timetable_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
-    )
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f'timetable_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+        )
+    except Exception as e:
+        flash(f'Export failed: {str(e)}', 'error')
+        return redirect(url_for('admin_dashboard'))
 
 @app.route('/history')
 def history():
@@ -642,7 +675,10 @@ def delete_upload(upload_id):
     if upload:
         # Delete file
         if os.path.exists(upload['file_path']):
-            os.remove(upload['file_path'])
+            try:
+                os.remove(upload['file_path'])
+            except:
+                pass
         
         # Delete timetable records
         conn.execute('DELETE FROM timetable WHERE pdf_name = ?', (upload['filename'],))
@@ -662,5 +698,28 @@ def delete_upload(upload_id):
     conn.close()
     return redirect(url_for('history'))
 
+# ==================== ERROR HANDLERS ====================
+
+@app.errorhandler(404)
+def not_found(error):
+    """Handle 404 errors"""
+    flash('Page not found!', 'error')
+    return redirect(url_for('index'))
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors"""
+    flash('An internal error occurred. Please try again.', 'error')
+    return redirect(url_for('index'))
+
+@app.errorhandler(413)
+def file_too_large(error):
+    """Handle file too large errors"""
+    flash('File size exceeds 10MB limit!', 'error')
+    return redirect(url_for('upload'))
+
+# ==================== MAIN ====================
+
 if __name__ == '__main__':
+    # For local development
     app.run(debug=True, host='0.0.0.0', port=5000)

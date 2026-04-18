@@ -15,4 +15,3 @@ services:
         value: /opt/render/project/src/database.db
       - key: UPLOAD_FOLDER
         value: /tmp/uploads
-

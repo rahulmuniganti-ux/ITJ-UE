@@ -556,7 +556,142 @@ def student_dashboard():
                          subject_count=subject_count,
                          my_exams=my_exams,
                          upcoming_exams=upcoming_exams)
+# ==================== DEBUG ROUTE ====================
+@app.route('/debug/check')
+def debug_check():
+    """Debug route to check database status"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if timetable table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='timetable'")
+        table_exists = cursor.fetchone()
+        
+        html = "<h1>Database Debug Info</h1>"
+        html += f"<p>Database Path: {DATABASE_PATH}</p>"
+        html += f"<p>Timetable table exists: {bool(table_exists)}</p>"
+        
+        if table_exists:
+            # Count records
+            cursor.execute("SELECT COUNT(*) as count FROM timetable")
+            count = cursor.fetchone()
+            html += f"<p>Timetable records: {count['count']}</p>"
+            
+            # Show sample data
+            cursor.execute("SELECT * FROM timetable LIMIT 5")
+            records = cursor.fetchall()
+            html += "<h2>Sample Records:</h2><ul>"
+            for record in records:
+                html += f"<li>{dict(record)}</li>"
+            html += "</ul>"
+        
+        # Check all tables
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = cursor.fetchall()
+        html += "<h2>All Tables:</h2><ul>"
+        for table in tables:
+            html += f"<li>{table['name']}</li>"
+        html += "</ul>"
+        
+        conn.close()
+        return html
+        
+    except Exception as e:
+        import traceback
+        return f"<h1>Error:</h1><pre>{str(e)}\n\n{traceback.format_exc()}</pre>"
 
+
+# ==================== VIEW DATE ROUTES ====================
+@app.route('/view_date')
+def view_date():
+    """View timetable by date"""
+    try:
+        # Check if user is logged in
+        if 'user_id' not in session:
+            flash('Please login to continue.', 'warning')
+            return redirect(url_for('login'))
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get all unique dates from timetable
+        cursor.execute('SELECT DISTINCT date FROM timetable WHERE date IS NOT NULL ORDER BY date DESC')
+        dates = cursor.fetchall()
+        conn.close()
+        
+        if not dates or len(dates) == 0:
+            flash('No timetable data available yet. Please contact admin to upload timetables.', 'info')
+            return redirect(url_for('student_dashboard'))
+        
+        return render_template('view_date.html', dates=dates)
+        
+    except Exception as e:
+        print(f"❌ View Date Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash('An internal error occurred. Please try again.', 'error')
+        return redirect(url_for('student_dashboard'))
+
+
+@app.route('/by_date', methods=['GET', 'POST'])
+def by_date():
+    """Search timetable by date"""
+    try:
+        # Check if user is logged in
+        if 'user_id' not in session:
+            flash('Please login to continue.', 'warning')
+            return redirect(url_for('login'))
+        
+        if request.method == 'POST':
+            selected_date = request.form.get('date')
+            
+            if not selected_date:
+                flash('Please select a date.', 'warning')
+                return redirect(url_for('by_date'))
+            
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            # Get timetable for selected date
+            cursor.execute('''
+                SELECT * FROM timetable 
+                WHERE date = ? 
+                ORDER BY upload_time DESC
+            ''', (selected_date,))
+            
+            timetable_data = cursor.fetchall()
+            conn.close()
+            
+            if not timetable_data or len(timetable_data) == 0:
+                flash(f'No timetable found for {selected_date}.', 'info')
+                return redirect(url_for('by_date'))
+            
+            return render_template('by_date_results.html', 
+                                 timetable=timetable_data, 
+                                 selected_date=selected_date)
+        
+        # GET request - show date selection form
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get all unique dates
+        cursor.execute('SELECT DISTINCT date FROM timetable WHERE date IS NOT NULL ORDER BY date DESC')
+        dates = cursor.fetchall()
+        conn.close()
+        
+        if not dates or len(dates) == 0:
+            flash('No timetable data available yet. Please contact admin to upload timetables.', 'info')
+            return redirect(url_for('student_dashboard'))
+        
+        return render_template('by_date.html', dates=dates)
+        
+    except Exception as e:
+        print(f"❌ By Date Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash('An internal error occurred. Please try again.', 'error')
+        return redirect(url_for('student_dashboard'))
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
     """Upload PDF timetable"""

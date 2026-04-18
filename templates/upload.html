@@ -1,41 +1,611 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Timetable - ITJ-UE Portal</title>
+    <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<title>Upload</title>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        /* Navigation Bar */
+        .navbar {
+            background: rgba(13, 27, 62, 0.95);
+            padding: 15px 0;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.3);
+        }
 
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .logo {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Flash Messages */
+        .flash-container {
+            max-width: 700px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .flash {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            animation: slideIn 0.3s ease;
+            text-align: center;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .flash-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .flash-error {
+            background: #f44336;
+            color: white;
+        }
+
+        .flash-warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        /* Upload Container */
+        .upload-container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 700px;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .upload-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .upload-header .icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+
+        .upload-header h2 {
+            color: #1e3c72;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .upload-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Alert Box */
+        .alert-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        .alert-box .title {
+            font-weight: bold;
+            color: #1976d2;
+            margin-bottom: 5px;
+        }
+
+        .alert-box .text {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .alert-box ul {
+            margin: 10px 0 0 20px;
+            color: #555;
+            font-size: 14px;
+        }
+
+        /* File Upload Area */
+        .file-upload-area {
+            border: 3px dashed #2a5298;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: #f5f8ff;
+            transition: 0.3s;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .file-upload-area:hover {
+            border-color: #1e3c72;
+            background: #e3ebff;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #4caf50;
+            background: #e8f5e9;
+        }
+
+        .file-upload-area .icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+            color: #2a5298;
+        }
+
+        .file-upload-area h3 {
+            color: #1e3c72;
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+        .file-upload-area p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .file-upload-area .file-info {
+            color: #999;
+            font-size: 12px;
+        }
+
+        /* Hidden File Input */
+        #fileInput {
+            display: none;
+        }
+
+        /* Selected File Display */
+        .selected-file {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .selected-file.show {
+            display: flex;
+        }
+
+        .selected-file .file-icon {
+            font-size: 32px;
+        }
+
+        .selected-file .file-details {
+            flex: 1;
+        }
+
+        .selected-file .file-name {
+            font-weight: bold;
+            color: #2e7d32;
+            margin-bottom: 5px;
+        }
+
+        .selected-file .file-size {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .selected-file .remove-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .selected-file .remove-btn:hover {
+            background: #d32f2f;
+        }
+
+        /* Button */
+        .btn-upload {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-upload:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(42, 82, 152, 0.4);
+        }
+
+        .btn-upload:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-upload:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .progress-container.show {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(13, 27, 62, 0.95);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .nav-links {
+                justify-content: center;
+            }
+
+            .upload-container {
+                padding: 30px 20px;
+            }
+
+            .upload-header h2 {
+                font-size: 24px;
+            }
+
+            .file-upload-area {
+                padding: 30px 20px;
+            }
+        }
+    </style>
 </head>
+<body>
 
-<body class="bg-light">
+<!-- Navigation Bar -->
+<nav class="navbar">
+    <div class="nav-container">
+        <h1 class="logo">ITJ-UE Portal</h1>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            {% if session.get('role') == 'admin' %}
+                <a href="/admin_dashboard">Dashboard</a>
+                <a href="/history">History</a>
+            {% endif %}
+            {% if session.get('role') %}
+                <a href="/view_consolidated">Timetable</a>
+                <a href="/logout">Logout</a>
+            {% else %}
+                <a href="/login">Login</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
 
-<div class="container mt-5">
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-container">
+            {% for category, message in messages %}
+                <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
 
-<div class="card shadow">
+<!-- Main Content -->
+<div class="main-content">
+    <div class="upload-container">
+        
+        <!-- Header -->
+        <div class="upload-header">
+            <div class="icon">📤</div>
+            <h2>Upload Timetable PDF</h2>
+            <p>Upload examination timetable PDF for automatic extraction</p>
+        </div>
 
-<div class="card-header bg-primary text-white">
+        <!-- Alert Box -->
+        <div class="alert-box">
+            <div class="title">📋 Upload Instructions</div>
+            <div class="text">
+                Please ensure your PDF file meets the following requirements:
+                <ul>
+                    <li>File format: PDF only</li>
+                    <li>Maximum file size: 10 MB</li>
+                    <li>Contains examination timetable data</li>
+                    <li>Text should be readable (not scanned images)</li>
+                </ul>
+            </div>
+        </div>
 
-Upload Timetable
+        <!-- Upload Form -->
+        <form method="POST" action="/upload" enctype="multipart/form-data" id="uploadForm">
+            
+            <!-- File Upload Area -->
+            <div class="file-upload-area" id="dropArea" onclick="document.getElementById('fileInput').click()">
+                <div class="icon">📄</div>
+                <h3>Click to Browse or Drag & Drop</h3>
+                <p>Select a PDF file from your computer</p>
+                <div class="file-info">Supported format: PDF | Max size: 10 MB</div>
+            </div>
 
+            <!-- Hidden File Input -->
+            <input 
+                type="file" 
+                id="fileInput" 
+                name="file" 
+                accept=".pdf,application/pdf"
+                required
+            >
+
+            <!-- Selected File Display -->
+            <div class="selected-file" id="selectedFile">
+                <div class="file-icon">📄</div>
+                <div class="file-details">
+                    <div class="file-name" id="fileName">No file selected</div>
+                    <div class="file-size" id="fileSize">0 KB</div>
+                </div>
+                <button type="button" class="remove-btn" onclick="removeFile()">✕ Remove</button>
+            </div>
+
+            <!-- Upload Button -->
+            <button type="submit" class="btn-upload" id="uploadBtn" disabled>
+                📤 Upload Timetable
+            </button>
+
+            <!-- Progress Bar -->
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill">0%</div>
+                </div>
+                <div class="progress-text" id="progressText">Uploading...</div>
+            </div>
+
+        </form>
+
+    </div>
 </div>
 
-<div class="card-body">
+<!-- Footer -->
+<footer class="footer">
+    <p>&copy; 2026 ITJ-UE Portal | JNTUH Examination Management System</p>
+</footer>
 
-<form method="POST" enctype="multipart/form-data">
+<script>
+// File Input Change Handler
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        displaySelectedFile(file);
+    }
+});
 
-<input type="file" class="form-control mb-3" name="file">
+// Display Selected File
+function displaySelectedFile(file) {
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const selectedFile = document.getElementById('selectedFile');
+    const uploadBtn = document.getElementById('uploadBtn');
+    
+    // Validate file type
+    if (file.type !== 'application/pdf') {
+        alert('⚠️ Please select a PDF file only!');
+        removeFile();
+        return;
+    }
+    
+    // Validate file size (10 MB = 10 * 1024 * 1024 bytes)
+    if (file.size > 10 * 1024 * 1024) {
+        alert('⚠️ File size must be less than 10 MB!');
+        removeFile();
+        return;
+    }
+    
+    fileName.textContent = file.name;
+    fileSize.textContent = formatFileSize(file.size);
+    selectedFile.classList.add('show');
+    uploadBtn.disabled = false;
+}
 
-<button class="btn btn-primary">Upload</button>
+// Remove File
+function removeFile() {
+    document.getElementById('fileInput').value = '';
+    document.getElementById('selectedFile').classList.remove('show');
+    document.getElementById('uploadBtn').disabled = true;
+}
 
-</form>
+// Format File Size
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
 
-</div>
+// Drag and Drop Handlers
+const dropArea = document.getElementById('dropArea');
 
-</div>
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropArea.addEventListener(eventName, preventDefaults, false);
+});
 
-</div>
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropArea.addEventListener(eventName, () => {
+        dropArea.classList.add('dragover');
+    }, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropArea.addEventListener(eventName, () => {
+        dropArea.classList.remove('dragover');
+    }, false);
+});
+
+dropArea.addEventListener('drop', function(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    if (files.length > 0) {
+        document.getElementById('fileInput').files = files;
+        displaySelectedFile(files[0]);
+    }
+}, false);
+
+// Form Submit Handler (Show Progress)
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    const progressContainer = document.getElementById('progressContainer');
+    const uploadBtn = document.getElementById('uploadBtn');
+    
+    progressContainer.classList.add('show');
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = '⏳ Uploading...';
+    
+    // Simulate progress (since we can't track actual upload progress easily)
+    simulateProgress();
+});
+
+// Simulate Progress Bar
+function simulateProgress() {
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    let progress = 0;
+    
+    const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 90) progress = 90;
+        
+        progressFill.style.width = progress + '%';
+        progressFill.textContent = Math.round(progress) + '%';
+        
+        if (progress >= 90) {
+            clearInterval(interval);
+            progressText.textContent = 'Processing PDF...';
+        }
+    }, 200);
+}
+</script>
 
 </body>
 </html>

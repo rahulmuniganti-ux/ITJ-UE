@@ -1,59 +1,524 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consolidated Timetable - ITJ-UE Portal</title>
+    <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-{% block content %}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+        }
 
-<h2>CONSOLIDATED EXTERNAL TIMETABLE</h2>
+        /* Navigation Bar */
+        .navbar {
+            background: rgba(13, 27, 62, 0.95);
+            padding: 15px 0;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.3);
+        }
 
-<div style="overflow-x:auto">
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
 
-<table class="styled-table">
+        .logo {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
 
-<tr>
-<th>DATE</th>
-<th>N/AN</th>
-<th>COLLEGE</th>
-<th>REG</th>
-<th>YEAR</th>
-<th>SEM</th>
-<th>TYPE</th>
-<th>CODE</th>
-<th>BRANCH</th>
-<th>SUBJECT</th>
-<th>SUB CODE</th>
-<th>COUNT</th>
-</tr>
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
 
-{{ table_html|safe }}
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
 
-</table>
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Flash Messages */
+        .flash-container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .flash {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .flash-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .flash-error {
+            background: #f44336;
+            color: white;
+        }
+
+        .flash-warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        h2 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 32px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Action Bar */
+        .action-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .action-bar .info {
+            color: #333;
+            font-weight: bold;
+        }
+
+        .action-bar .buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(42, 82, 152, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.4);
+        }
+
+        /* Search Box */
+        .search-box {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #2a5298;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: #1e3c72;
+            box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.1);
+        }
+
+        /* Table Container */
+        .table-container {
+            background: white;
+            padding: 0;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            overflow-x: auto;
+        }
+
+        /* Table Styles */
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1200px;
+        }
+
+        .styled-table thead {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .styled-table th {
+            color: white;
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 13px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            border-right: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .styled-table th:last-child {
+            border-right: none;
+        }
+
+        .styled-table td {
+            padding: 12px 10px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+            border-right: 1px solid #f0f0f0;
+            color: #333;
+            font-size: 13px;
+        }
+
+        .styled-table td:last-child {
+            border-right: none;
+        }
+
+        .styled-table tbody tr {
+            transition: 0.2s;
+        }
+
+        .styled-table tbody tr:hover {
+            background: #f5f8ff;
+        }
+
+        .styled-table tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+
+        .styled-table tbody tr:nth-child(even):hover {
+            background: #f5f8ff;
+        }
+
+        /* Date Row Styling */
+        .date-row td {
+            background: #e3f2fd !important;
+            font-weight: bold;
+            color: #1565c0;
+            font-size: 14px;
+        }
+
+        .date-row td:first-child {
+            background: #1e88e5 !important;
+            color: white;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state .icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(13, 27, 62, 0.95);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 50px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .nav-links {
+                justify-content: center;
+            }
+
+            .action-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .action-bar .buttons {
+                justify-content: center;
+            }
+
+            .styled-table {
+                font-size: 11px;
+            }
+
+            .styled-table th,
+            .styled-table td {
+                padding: 8px 5px;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            .navbar,
+            .action-bar,
+            .search-box,
+            .footer {
+                display: none;
+            }
+
+            body {
+                background: white;
+            }
+
+            .table-container {
+                box-shadow: none;
+            }
+
+            .styled-table {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<nav class="navbar">
+    <div class="nav-container">
+        <h1 class="logo">ITJ-UE Portal</h1>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            {% if session.get('role') == 'admin' %}
+                <a href="/admin_dashboard">Dashboard</a>
+                <a href="/history">History</a>
+            {% endif %}
+            {% if session.get('role') %}
+                <a href="/view_consolidated">Timetable</a>
+                <a href="/search">Search</a>
+                <a href="/view_by_date">By Date</a>
+                <a href="/export_excel">Download</a>
+                <a href="/logout">Logout</a>
+            {% else %}
+                <a href="/login">Login</a>
+                <a href="/register">Register</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-container">
+            {% for category, message in messages %}
+                <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+<!-- Main Content -->
+<div class="main-content">
+    <h2>📋 CONSOLIDATED EXTERNAL TIMETABLE</h2>
+
+    <!-- Action Bar -->
+    <div class="action-bar">
+        <div class="info">
+            📊 Total Records: <span id="totalRecords">{{ total_records if total_records else 0 }}</span>
+        </div>
+        <div class="buttons">
+            <a href="/search" class="btn btn-primary">🔍 Search</a>
+            <a href="/view_by_date" class="btn btn-success">📆 View by Date</a>
+            <a href="/export_excel" class="btn btn-warning">📥 Download Excel</a>
+            <button onclick="window.print()" class="btn btn-primary">🖨️ Print</button>
+        </div>
+    </div>
+
+    <!-- Search Box -->
+    <div class="search-box">
+        <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="🔍 Search by date, branch, subject, code, or any field..." 
+            onkeyup="filterTable()"
+        >
+    </div>
+
+    <!-- Table Container -->
+    <div class="table-container">
+        {% if table_html %}
+        <table class="styled-table" id="timetableTable">
+            <thead>
+                <tr>
+                    <th>DATE</th>
+                    <th>N/AN</th>
+                    <th>COLLEGE</th>
+                    <th>REG</th>
+                    <th>YEAR</th>
+                    <th>SEM</th>
+                    <th>TYPE</th>
+                    <th>CODE</th>
+                    <th>BRANCH</th>
+                    <th>SUBJECT</th>
+                    <th>SUB CODE</th>
+                    <th>COUNT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ table_html|safe }}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <div class="icon">📭</div>
+            <h3>No Timetable Data Available</h3>
+            <p>No examination timetable has been uploaded yet.</p>
+            {% if session.get('role') == 'admin' %}
+            <br><br>
+            <a href="/admin_dashboard" class="btn btn-primary">📤 Upload Timetable PDF</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
 
 </div>
 
-<style>
+<!-- Footer -->
+<footer class="footer">
+    <p>&copy; 2026 ITJ-UE Portal | JNTUH Examination Management System</p>
+</footer>
 
-.styled-table{
-width:100%;
-border-collapse:collapse;
-background:white;
+<script>
+// Search/Filter Table Function
+function filterTable() {
+    const input = document.getElementById('searchInput');
+    const filter = input.value.toUpperCase();
+    const table = document.getElementById('timetableTable');
+    
+    if (!table) return;
+    
+    const tbody = table.getElementsByTagName('tbody')[0];
+    const tr = tbody.getElementsByTagName('tr');
+    let visibleCount = 0;
+
+    for (let i = 0; i < tr.length; i++) {
+        const tds = tr[i].getElementsByTagName('td');
+        let found = false;
+        
+        for (let j = 0; j < tds.length; j++) {
+            const txtValue = tds[j].textContent || tds[j].innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                found = true;
+                break;
+            }
+        }
+        
+        if (found) {
+            tr[i].style.display = '';
+            visibleCount++;
+        } else {
+            tr[i].style.display = 'none';
+        }
+    }
+    
+    // Update record count
+    const totalRecordsSpan = document.getElementById('totalRecords');
+    if (totalRecordsSpan) {
+        if (filter === '') {
+            totalRecordsSpan.textContent = tr.length;
+        } else {
+            totalRecordsSpan.textContent = visibleCount + ' / ' + tr.length;
+        }
+    }
 }
 
-.styled-table th{
-background:#1a237e;
-color:white;
-padding:10px;
-}
+// Count total records on page load
+window.addEventListener('DOMContentLoaded', function() {
+    const table = document.getElementById('timetableTable');
+    if (table) {
+        const tbody = table.getElementsByTagName('tbody')[0];
+        const tr = tbody.getElementsByTagName('tr');
+        const totalRecordsSpan = document.getElementById('totalRecords');
+        if (totalRecordsSpan) {
+            totalRecordsSpan.textContent = tr.length;
+        }
+    }
+});
+</script>
 
-.styled-table td{
-padding:8px;
-text-align:center;
-border:1px solid #ddd;
-}
-
-.date-row td:first-child{
-font-weight:bold;
-background:#e3f2fd;
-}
-
-</style>
-
-{% endblock %}
+</body>
+</html>
